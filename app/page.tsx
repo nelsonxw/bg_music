@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import type { VisualStyle, MusicSource, YouTubePlayer } from '@/lib/types'
 import { DEFAULT_MUSIC_SOURCE } from '@/lib/constants'
 import { useYouTubePlayer } from '@/hooks/useYouTubePlayer'
@@ -26,11 +26,11 @@ export default function Home() {
     shouldUnmute: shouldUnmuteRef.current,
   })
 
-  const command = (action: 'playVideo' | 'pauseVideo' | 'mute' | 'unMute') => {
+  const command = useCallback((action: 'playVideo' | 'pauseVideo' | 'mute' | 'unMute') => {
     playerRef.current?.[action]()
-  }
+  }, [playerRef])
 
-  const beginListening = () => {
+  const beginListening = useCallback(() => {
     shouldPlayRef.current = true
     shouldUnmuteRef.current = true
     playerRef.current?.setVolume(100)
@@ -38,16 +38,37 @@ export default function Home() {
     command('playVideo')
     setMuted(false)
     setStarted(true)
-  }
+  }, [playerRef, command])
 
-  const togglePlaying = () => {
+  useEffect(() => {
+    if (started) return
+
+    const handleUserInteraction = () => {
+      if (!started) {
+        beginListening()
+      }
+    }
+
+    const handleClick = () => handleUserInteraction()
+    const handleScroll = () => handleUserInteraction()
+
+    document.addEventListener('click', handleClick)
+    window.addEventListener('scroll', handleScroll)
+
+    return () => {
+      document.removeEventListener('click', handleClick)
+      window.removeEventListener('scroll', handleScroll)
+    }
+  }, [started, beginListening])
+
+  const togglePlaying = useCallback(() => {
     const nextPlaying = !playing
     shouldPlayRef.current = nextPlaying
     command(nextPlaying ? 'playVideo' : 'pauseVideo')
     setPlaying(nextPlaying)
-  }
+  }, [playing, command])
 
-  const toggleMuted = () => {
+  const toggleMuted = useCallback(() => {
     const nextMuted = !muted
     shouldUnmuteRef.current = !nextMuted
     command(nextMuted ? 'mute' : 'unMute')
@@ -57,7 +78,7 @@ export default function Home() {
     }
     setMuted(nextMuted)
     setStarted(true)
-  }
+  }, [muted, command, playerRef])
 
   const switchMusicSource = async () => {
     if (switchingSource) return
