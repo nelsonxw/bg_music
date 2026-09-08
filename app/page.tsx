@@ -33,15 +33,31 @@ export default function Home() {
   useEffect(() => {
     if (started) return
 
-    const handleUserInteraction = () => {
+    const handleUserInteraction = async () => {
       if (!started) {
-        shouldPlayRef.current = true
-        shouldUnmuteRef.current = true
-        playerRef.current?.setVolume(100)
-        command('unMute')
-        command('playVideo')
-        setMuted(false)
-        setStarted(true)
+        try {
+          const response = await fetch('/api/music-source')
+          if (!response.ok) throw new Error('Music source request failed')
+          const randomSource = (await response.json()) as MusicSource
+          setMusicSource(randomSource)
+          playerRef.current?.loadVideoById(randomSource.videoId)
+          shouldPlayRef.current = true
+          shouldUnmuteRef.current = true
+          playerRef.current?.setVolume(100)
+          command('unMute')
+          command('playVideo')
+          setMuted(false)
+          setStarted(true)
+        } catch {
+          setMusicError('Unable to load random music stream.')
+          shouldPlayRef.current = true
+          shouldUnmuteRef.current = true
+          playerRef.current?.setVolume(100)
+          command('unMute')
+          command('playVideo')
+          setMuted(false)
+          setStarted(true)
+        }
       }
     }
 
@@ -89,7 +105,6 @@ export default function Home() {
       if (shouldUnmuteRef.current) command('unMute')
       else command('mute')
       setMusicSource(nextSource)
-      setStarted(true)
     } catch {
       setMusicError('Unable to find another stream right now.')
     } finally {
