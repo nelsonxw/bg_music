@@ -30,22 +30,18 @@ export default function Home() {
     playerRef.current?.[action]()
   }, [playerRef])
 
-  const beginListening = useCallback(() => {
-    shouldPlayRef.current = true
-    shouldUnmuteRef.current = true
-    playerRef.current?.setVolume(100)
-    command('unMute')
-    command('playVideo')
-    setMuted(false)
-    setStarted(true)
-  }, [playerRef, command])
-
   useEffect(() => {
     if (started) return
 
     const handleUserInteraction = () => {
       if (!started) {
-        beginListening()
+        shouldPlayRef.current = true
+        shouldUnmuteRef.current = true
+        playerRef.current?.setVolume(100)
+        command('unMute')
+        command('playVideo')
+        setMuted(false)
+        setStarted(true)
       }
     }
 
@@ -59,7 +55,7 @@ export default function Home() {
       document.removeEventListener('click', handleClick)
       window.removeEventListener('scroll', handleScroll)
     }
-  }, [started, beginListening])
+  }, [started, command, playerRef])
 
   const togglePlaying = useCallback(() => {
     const nextPlaying = !playing
@@ -107,7 +103,7 @@ export default function Home() {
       <div className="aurora aurora-one" />
       <div className="aurora aurora-two" />
       <Header />
-      <Hero onBeginListening={beginListening} isListening={started} />
+      <Hero />
       <div className="bottom-area">
         <MusicPlayer
           musicSource={musicSource}
@@ -122,7 +118,6 @@ export default function Home() {
         {musicError && <p className="music-error" role="status">{musicError}</p>}
       </div>
       <div ref={playerContainerRef} aria-hidden="true" className="youtube-player" />
-      {!started && <div className="autoplay-hint">Sound begins muted by your browser <span>·</span> tap above to open the room</div>}
     </main>
   )
 }
